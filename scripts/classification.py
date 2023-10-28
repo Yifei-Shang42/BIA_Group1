@@ -68,19 +68,8 @@ MODEL & LOSS & OPTIMIZER
 
 # Create DenseNet121, CrossEntropyLoss and Adam optimizer
 model = monai.networks.nets.DenseNet121(spatial_dims=2, in_channels=3, out_channels=2).to(device)
-# model = monai.networks.nets.SENet154(spatial_dims=3, in_channels=1, num_classes=labels.shape[-1]).to(device)
-# model = monai.networks.nets.ViT(in_channels=1,
-#                                 img_size=(67,80,46),
-#                                 patch_size=(8,8,8),
-#                                 classification=True,
-#                                 post_activation="linear",
-#                                 num_classes=labels.shape[-1],
-#                                 dropout_rate=0.2).to(device)
-# model = monai.networks.nets.HighResNet(spatial_dims=3, in_channels=1, out_channels=2).to(device)
-# model = monai.networks.nets.DynUNet(spatial_dims=3, in_channels=1, out_channels=2, kernel_size, strides, upsample_kernel_size).to(device)
 loss_function = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), 1e-5)
-
 
 
 """
