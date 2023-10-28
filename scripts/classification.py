@@ -39,13 +39,6 @@ LOAD DATA
 train_img, train_labels = load_data_labels(root_path="./data/train")
 test_img, test_labels = load_data_labels(root_path="./data/test")
 
-# ## check data shape
-# wrong = []
-# for file in train_img:
-#     img = im.imread(file)
-#     print(img.shape)
-#     if img.shape != (460, 700, 3):
-#         wrong.append(file)
 
 """
 CONSTRUCT DATASETS
