@@ -15,9 +15,11 @@ import os
 import torch
 import monai
 import matplotlib.pyplot as plt
+import numpy as np
 import skimage.io as im
 from torch.utils.tensorboard import SummaryWriter
 from monai.config import print_config
+from monai.visualize import CAM
 from monai.data import DataLoader, ImageDataset
 from monai.transforms import (
     EnsureChannelFirst,
@@ -46,21 +48,28 @@ CONSTRUCT DATASETS
 train_ds, train_loader = construct_datasets(images=train_img,
                                             labels=train_labels,
                                             is_train=True,
-                                            batch_size=4,
+                                            batch_size=2,
                                             pinmemory=pinmemory)
 test_ds, test_loader = construct_datasets(images=test_img,
                                           labels=test_labels,
                                           is_train=False,
-                                          batch_size=4,
+                                          batch_size=2,
                                           pinmemory=pinmemory)
 
 
 """
 MODEL & LOSS & OPTIMIZER
 """
-
 # Create DenseNet121, CrossEntropyLoss and Adam optimizer
-model = monai.networks.nets.DenseNet121(spatial_dims=2, in_channels=3, out_channels=2).to(device)
+# model = monai.networks.nets.SEResNet101(spatial_dims=2, in_channels=3, num_classes=2).to(device)
+model = monai.networks.nets.SEResNet152(spatial_dims=2, in_channels=3, num_classes=2).to(device)
+# model = monai.networks.nets.DenseNet121(spatial_dims=2, in_channels=3, out_channels=2).to(device)
+# model = monai.networks.nets.ViT(in_channels=3,
+#                                 img_size=(700, 460),
+#                                 patch_size=(16, 16),
+#                                 classification=True,
+#                                 num_classes=2,
+#                                 spatial_dims=2).to(device)
 loss_function = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), 1e-5)
 
@@ -76,10 +85,10 @@ epoch_loss_values = []
 metric_values = []
 writer = SummaryWriter()
 max_epochs = 100
-save_name = "./models/best_metric_model_classification_Dense121.pth"
+save_name = "./models/best_metric_model_classification_SEResNet152.pth"
 initial_start_time = time.time()
 start_time = initial_start_time
-model_name = "Dense"
+model_name = "SEResNet152"
 
 ## Main Training
 for epoch in range(max_epochs):
@@ -164,4 +173,48 @@ print(f"Training completed, best_metric: {best_metric:.4f} at epoch: {best_metri
 writer.close()
 
 
+"""
+CAM
+"""
+# Load trained model
+model = load_trained_model(model_pth="./models/best_metric_model_classification_Dense121_9578.pth",
+                           model_class=monai.networks.nets.DenseNet121,
+                           device=device)
+
+# Visualize
+show_cam_of_img(model,
+                img_pth=train_img[22],
+                device=device)
+
+
+"""
+INFERENCE
+"""
+train_ds, train_loader = construct_datasets(images=train_img,
+                                            labels=train_labels,
+                                            is_train=True,
+                                            batch_size=1,
+                                            pinmemory=pinmemory)
+wrong_images = []
+wrong_labels = []
+model.eval()
+num_correct = 0.0
+metric_count = 0
+for val_data in train_loader:
+    val_images, val_labels = val_data[0].to(device), val_data[1].to(device)
+    with torch.no_grad():
+        val_outputs = model(val_images)
+        value = torch.eq(val_outputs.argmax(dim=-1), val_labels)
+        metric_count += len(value)
+        num_correct += value.sum().item()
+        if value.sum().item() != val_images.shape[0]:
+            wrong_images.append(val_images)
+            wrong_labels.append(val_labels)
+metric = num_correct / metric_count
+
+# viz image
+for img in wrong_images[5:]:
+    im.imshow(np.array(img.cpu())[0].swapaxes(0, -1))
+    im.show()
+    break
 
