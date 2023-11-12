@@ -7,7 +7,7 @@ import cv2
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
 
-from scripts.utils import *
+from utils import *
 
 """
 LOAD DATA
@@ -23,10 +23,18 @@ img = im.imread(train_img[1])
 im.imshow(img)
 im.show()
 
-res = kmeans_watershed_nuclei_seg(img)
+res, cell_density, nuclear_proportion = kmeans_watershed_nuclei_seg(img, sigma=5)
+print(cell_density, nuclear_proportion)
 
-plt.imshow(res, cmap="gray")
+plt.imshow(res, cmap="viridis")
 plt.show()
+
+
+"""
+CELL PROPERTY MEASUREMENT 
+"""
+cell_num, cell_mean_area, cell_mean_intensity, data = cell_property(img, res)
+print(cell_num, cell_mean_area, cell_mean_intensity)
 
 
 """
