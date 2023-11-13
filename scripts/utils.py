@@ -10,6 +10,8 @@ import random
 import sys
 import shutil
 import os
+import scipy.spatial
+import scipy.signal
 import torch
 import monai
 import matplotlib.pyplot as plt
@@ -160,7 +162,7 @@ def kmeans_watershed_nuclei_seg(img, sigma: int = 7,
     :return: segmentation of single nuclei and general cell properties 
     """
     # pre-processing 
-    img = gaussian(img, sigma=sigma)
+    img = gaussian(img, sigma=sigma, channel_axis=-1)
 
     # KMeans
     img_flat = img.transpose(2, 0, 1).reshape(3, -1).T
@@ -226,3 +228,86 @@ def cell_property(img, seg):
     cell_mean_intensity = round(np.mean(data.mean_intensity), ndigits=3)
 
     return (cell_num, cell_mean_area, cell_mean_intensity, data)
+
+
+### Get Border from Instance Segmentation
+def border_cell_from_ins_map(ins_map):
+    """
+    :param ins_map: water shed segmentation res
+    :return: cell borders for plot, mean & std of cell shape irregularity
+    """
+    # init res df
+    roundness_arr = []
+    plot_df = np.zeros(ins_map.shape)
+
+    # get border for each cell: remove bgd with [1:]
+    for cell in np.unique(ins_map)[1:]:
+        # isolate this one cell
+        curr_map = ins_map.copy()
+        curr_map[curr_map != cell] = 0
+
+        # calculate center of mass
+        curr_center = ndi.center_of_mass(curr_map)
+
+        # decide if each pixel is border
+        kernel = np.array([[1,1,1],
+                           [1,1,1],
+                           [1,1,1]])
+
+        # detect inner-vs-border using convolution
+        conv_res = scipy.signal.convolve2d(curr_map, kernel,
+                                           boundary="fill",
+                                           fillvalue=0,
+                                           mode="same")
+        curr_map[conv_res == cell * 9] = 0
+        plot_df += curr_map
+
+        # calculate distance to center
+        distances = []
+        for coord in zip(*np.nonzero(curr_map)):
+            curr_dis = scipy.spatial.distance.euclidean(coord, curr_center)
+            distances.append(curr_dis)
+        roundness = np.std(np.array(distances)/max(distances))
+        roundness_arr.append(roundness)
+
+    # shape irregularity properties
+    mean_shape_irregularity = round(np.mean(np.array(roundness_arr)), 3)
+    std_shape_irregularity = round(np.std(np.array(roundness_arr)), 3)
+
+    return (plot_df, mean_shape_irregularity, std_shape_irregularity)
+
+
+### Main Function
+def main_func(img_path):
+    """
+    :param img_path: input image path
+    :return: dictionary of cell properties, img with border marked
+    """
+    # read data
+    img = im.imread(img_path)
+    properties = {}
+
+    # KMEANS & WATERSHED
+    res, cell_density, nuclear_proportion = kmeans_watershed_nuclei_seg(img, sigma=5)
+
+    # CELL PROPERTY MEASUREMENT
+    cell_num, cell_mean_area, cell_mean_intensity, data = cell_property(img, res)
+
+    # BORDER & SHAPE IRREGULARITY
+    plot_df, mean_irregularity, std_irregularity = border_cell_from_ins_map(res)
+    img_with_border = img.copy()
+    img_with_border[plot_df != 0, :] = 0
+
+    # Summarize Results
+    properties["cell_density"] = cell_density
+    properties["nuclear_proportion"] = nuclear_proportion
+    properties["cell_num"] = cell_num
+    properties["cell_mean_area"] = cell_mean_area
+    properties["cell_mean_intensity"] = cell_mean_intensity
+    properties["mean_irregularity"] = mean_irregularity
+    properties["std_irregularity"] = std_irregularity
+
+    plt.imshow(img_with_border)
+    plt.show()
+
+    return properties, img_with_border

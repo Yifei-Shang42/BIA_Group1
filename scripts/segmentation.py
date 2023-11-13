@@ -6,8 +6,10 @@ from scipy import ndimage as ndi
 import cv2
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
+import scipy.spatial
+import scipy.signal
 
-from utils import *
+from scripts.utils import *
 
 """
 LOAD DATA
@@ -38,13 +40,22 @@ print(cell_num, cell_mean_area, cell_mean_intensity)
 
 
 """
-ALTERNATIVE
+BORDER & SHAPE IRREGULARITY
 """
-# blur = cv2.GaussianBlur(img, (3,3), 0)
-# gray = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
-# thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
-#
-# # Perform connected component labeling
-# n_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(thresh, connectivity=4)
+plot_df, mean_irregularity, std_irregularity = border_cell_from_ins_map(res)
+print(mean_irregularity, std_irregularity)
 
+# plot img with border
+img_with_border = img.copy()
+img_with_border[plot_df != 0, :] = 0
+
+plt.imshow(img_with_border)
+plt.show()
+
+
+"""
+MAIN FUNC
+"""
+properties, img_with_border = main_func(train_img[1])
+print(properties)
 
