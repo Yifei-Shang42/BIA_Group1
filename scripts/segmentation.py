@@ -54,6 +54,13 @@ plt.show()
 
 
 """
+MODEL INFERENCE
+"""
+label = model_inference(img_pth=train_img[0],
+                        model_pth="./models/best_metric_model_classification_Dense121_9560.pth").cpu()
+print(np.array(label)[0])
+
+"""
 MAIN FUNC
 """
 properties, img_with_border = main_func(train_img[1])

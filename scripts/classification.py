@@ -47,14 +47,16 @@ CONSTRUCT DATASETS
 """
 train_ds, train_loader = construct_datasets(images=train_img,
                                             labels=train_labels,
-                                            is_train=True,
-                                            batch_size=2,
-                                            pinmemory=pinmemory)
+                                            batch_size=4,
+                                            pinmemory=pinmemory,
+                                            use_kmeans=True)
+
+
 test_ds, test_loader = construct_datasets(images=test_img,
                                           labels=test_labels,
-                                          is_train=False,
-                                          batch_size=2,
-                                          pinmemory=pinmemory)
+                                          batch_size=4,
+                                          pinmemory=pinmemory,
+                                          use_kmeans=True)
 
 
 """
@@ -62,8 +64,8 @@ MODEL & LOSS & OPTIMIZER
 """
 # Create DenseNet121, CrossEntropyLoss and Adam optimizer
 # model = monai.networks.nets.SEResNet101(spatial_dims=2, in_channels=3, num_classes=2).to(device)
-model = monai.networks.nets.SEResNet152(spatial_dims=2, in_channels=3, num_classes=2).to(device)
-# model = monai.networks.nets.DenseNet121(spatial_dims=2, in_channels=3, out_channels=2).to(device)
+# model = monai.networks.nets.SEResNet152(spatial_dims=2, in_channels=3, num_classes=2).to(device)
+model = monai.networks.nets.DenseNet121(spatial_dims=2, in_channels=4, out_channels=2).to(device)
 # model = monai.networks.nets.ViT(in_channels=3,
 #                                 img_size=(700, 460),
 #                                 patch_size=(16, 16),
@@ -85,10 +87,10 @@ epoch_loss_values = []
 metric_values = []
 writer = SummaryWriter()
 max_epochs = 100
-save_name = "./models/best_metric_model_classification_SEResNet152.pth"
+save_name = "./models/best_metric_model_classification_DenseNet121_kmeans.pth"
 initial_start_time = time.time()
 start_time = initial_start_time
-model_name = "SEResNet152"
+model_name = "DenseNet121"
 
 ## Main Training
 for epoch in range(max_epochs):

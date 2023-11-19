@@ -38,6 +38,7 @@ from monai.transforms import (
     ResizeWithPadOrCrop
 )
 
+
 ### Load Data
 def load_data_labels(root_path="./data/train"):
     """
@@ -58,33 +59,24 @@ def load_data_labels(root_path="./data/train"):
 def construct_datasets(images,
                        labels,
                        pinmemory,
-                       is_train=True,
                        batch_size=4,
-                       rand_flip=False):
+                       use_kmeans=False):
     """
     :param images: list of image file names
     :param labels: list of labels (0: benign, 1: malignant)
     :param pinmemory: bool, torch.cuda.is_available()
-    :param is_train: bool, True if using train else False
     :param batch_size: int, batch size
-    :param rand_flip: float
-    :return:
+    :param use_kmeans: bool, True if using KMeans
+    :return: datasets
     """
     # Define transforms
-    if is_train:
-        # optional random flipping for training data
-        if rand_flip:
-            transforms = Compose([ScaleIntensity(),
-                                  EnsureChannelFirst(),
-                                  ResizeWithPadOrCrop((700, 460)),
-                                  RandFlip(prob=0.5, spatial_axis=None),])
-        else:
-            transforms = Compose([ScaleIntensity(),
-                                  EnsureChannelFirst(),
-                                  ResizeWithPadOrCrop((700, 460))
-            ])
+    if use_kmeans:
+        transforms = Compose([ScaleIntensity(),
+                              EnsureChannelFirst(),
+                              ResizeWithPadOrCrop((700, 460),
+                                                  use_kmean=use_kmeans),
+                              ])
     else:
-        # test data transform
         transforms = Compose([ScaleIntensity(),
                               EnsureChannelFirst(),
                               ResizeWithPadOrCrop((700, 460))])
@@ -142,10 +134,39 @@ def show_cam_of_img(model,
     return
 
 ### Model Inference
-def model_inference(model,
-                    train_ds,
-                    device):
+def model_inference(img_pth,
+                    model_pth):
+    """
+    :param img_pth: image path to be classified
+    :param model_pth: pretrained model path
+    :return: model prediction of the image class
+    """
+    # detect GPU / CPU
+    pinmemory = torch.cuda.is_available()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # load pretrained model
+    model = load_trained_model(model_pth=model_pth,
+                               model_class=monai.networks.nets.DenseNet121,
+                               device=device)
     model.eval()
+
+    # construct dataset based on read image
+    ds, loader = construct_datasets(images=[img_pth],
+                                    labels=[-1],
+                                    batch_size=1,
+                                    pinmemory=pinmemory,
+                                    use_kmeans=False)
+
+    # inference
+    for data in loader:
+        img, label = data[0].to(device), data[1].to(device)
+        with torch.no_grad():
+            outputs = model(img)
+            value = outputs.argmax(dim=-1)
+    return value
+
+
 
 
 ### KMeans & Watershed
