@@ -299,7 +299,7 @@ def border_cell_from_ins_map(ins_map):
 
 
 ### Main Function
-def main_func(img_path):
+def main_func(img_path, sigma: int = 5):
     """
     :param img_path: input image path
     :return: dictionary of cell properties, img with border marked
@@ -309,7 +309,7 @@ def main_func(img_path):
     properties = {}
 
     # KMEANS & WATERSHED
-    res, cell_density, nuclear_proportion = kmeans_watershed_nuclei_seg(img, sigma=5)
+    res, cell_density, nuclear_proportion = kmeans_watershed_nuclei_seg(img, sigma=sigma)
 
     # CELL PROPERTY MEASUREMENT
     cell_num, cell_mean_area, cell_mean_intensity, data = cell_property(img, res)
