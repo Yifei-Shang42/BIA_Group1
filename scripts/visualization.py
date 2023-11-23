@@ -80,14 +80,9 @@ if __name__ == "__main__":
                         model_pth="./models/best_metric_model_classification_Dense121_9560.pth").cpu()
                 label = np.array(label)[0]
                 print(label)
-                window['class'].update('Classification: ' + str(label))
-
+                window['class'].update('Classification: ' + ("malignant" if label else "benign"))
                 
-                # Diaplay and Save the image 
-                # plt.imshow(img_with_border, cmap=values['cmap'])
-                # plt.show()
-                
-                # io.imsave(values['output_path']+'/output.png', img_with_border, cmap=values['cmap'])
-                # window['image'].update(values['output_path']+'/output.png')
+                io.imsave(values['output_path']+'/output.png', img_with_border, cmap=values['cmap'])
+                window['image'].update(values['output_path']+'/output.png')
         
         

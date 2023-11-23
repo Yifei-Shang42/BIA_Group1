@@ -328,7 +328,4 @@ def main_func(img_path, sigma: int = 5):
     properties["mean_irregularity"] = mean_irregularity
     properties["std_irregularity"] = std_irregularity
 
-    plt.imshow(img_with_border)
-    plt.show()
-
     return properties, img_with_border
