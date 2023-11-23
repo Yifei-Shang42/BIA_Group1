@@ -98,7 +98,7 @@ def load_trained_model(model_pth,
     :return: loaded model
     """
     model = model_class(spatial_dims=2, in_channels=3, out_channels=2).to(device)
-    state_dict = torch.load(model_pth)
+    state_dict = torch.load(model_pth, map_location=torch.device('cpu'))
     model.load_state_dict(state_dict)
     return model
 
