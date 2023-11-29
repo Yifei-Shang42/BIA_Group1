@@ -201,8 +201,8 @@ def kmeans_watershed_nuclei_seg(img, sigma: int = 7,
     cyto_label = cyto_label.pop()
 
     # measure cell density and nuclear proportion 
-    cell_density = round(len(labels[(labels == cyto_label) | (labels == nuclei_label)].ravel())/len(img.ravel())*100, ndigits=3)
-    nuclear_proportion = round(len(labels[labels == nuclei_label].ravel())/len(labels[labels == cyto_label].ravel())*100, ndigits=3)
+    cell_population_density = round(len(labels[(labels == cyto_label) | (labels == nuclei_label)].ravel())/len(img.ravel())*100, ndigits=3)
+    nuclear_cytoplasmic_ratio = round(len(labels[labels == nuclei_label].ravel())/len(labels[labels == cyto_label].ravel())*100, ndigits=3)
 
     # watershed
     labels[labels != nuclei_label] = 10
@@ -218,7 +218,7 @@ def kmeans_watershed_nuclei_seg(img, sigma: int = 7,
     # instance filtering 
     segmented = remove_small_objects(res, min_size=min_size)
 
-    return (segmented, cell_density, nuclear_proportion) 
+    return (segmented, cell_population_density, nuclear_cytoplasmic_ratio) 
 
 
 ### Cell Property Measurement 
@@ -245,10 +245,10 @@ def cell_property(img, seg):
 
     # calculate cell properties 
     cell_num = data.shape[0]
-    cell_mean_area = round(np.mean(data.area), ndigits=3)
-    cell_mean_intensity = round(np.mean(data.mean_intensity), ndigits=3)
+    nuclear_mean_size = round(np.mean(data.area), ndigits=3)
+    nuclear_mean_intensity = round(np.mean(data.mean_intensity), ndigits=3)
 
-    return (cell_num, cell_mean_area, cell_mean_intensity, data)
+    return (cell_num, nuclear_mean_size, nuclear_mean_intensity, data)
 
 
 ### Get Border from Instance Segmentation
@@ -309,23 +309,23 @@ def main_func(img_path, sigma: int = 5):
     properties = {}
 
     # KMEANS & WATERSHED
-    res, cell_density, nuclear_proportion = kmeans_watershed_nuclei_seg(img, sigma=sigma)
+    res, cell_population_density, nuclear_cytoplasmic_ratio = kmeans_watershed_nuclei_seg(img, sigma=sigma)
 
     # CELL PROPERTY MEASUREMENT
-    cell_num, cell_mean_area, cell_mean_intensity, data = cell_property(img, res)
+    cell_num, nuclear_mean_size, nuclear_mean_intensity, data = cell_property(img, res)
 
     # BORDER & SHAPE IRREGULARITY
-    plot_df, mean_irregularity, std_irregularity = border_cell_from_ins_map(res)
+    plot_df, nuclear_shape_mean_irregularity, nuclear_shape_std_irregularity = border_cell_from_ins_map(res)
     img_with_border = img.copy()
     img_with_border[plot_df != 0, :] = 0
 
     # Summarize Results
-    properties["cell_density"] = cell_density
-    properties["nuclear_proportion"] = nuclear_proportion
+    properties["cell_population_density"] = cell_population_density
+    properties["nuclear_cytoplasmic_ratio"] = nuclear_cytoplasmic_ratio
     properties["cell_num"] = cell_num
-    properties["cell_mean_area"] = cell_mean_area
-    properties["cell_mean_intensity"] = cell_mean_intensity
-    properties["mean_irregularity"] = mean_irregularity
-    properties["std_irregularity"] = std_irregularity
+    properties["nuclear_mean_size"] = nuclear_mean_size
+    properties["nuclear_mean_intensity"] = nuclear_mean_intensity
+    properties["nuclear_shape_mean_irregularity"] = nuclear_shape_mean_irregularity
+    properties["nuclear_shape_std_irregularity"] = nuclear_shape_std_irregularity
 
     return properties, img_with_border

@@ -30,8 +30,8 @@ if __name__ == "__main__":
     im.imshow(img)
     im.show()
 
-    res, cell_density, nuclear_proportion = kmeans_watershed_nuclei_seg(img, sigma=5)
-    print(cell_density, nuclear_proportion)
+    res, cell_population_density, nuclear_cytoplasmic_ratio = kmeans_watershed_nuclei_seg(img, sigma=5)
+    print(cell_population_density, nuclear_cytoplasmic_ratio)
 
     plt.imshow(res, cmap="viridis")
     plt.show()
@@ -40,15 +40,15 @@ if __name__ == "__main__":
     """
     CELL PROPERTY MEASUREMENT 
     """
-    cell_num, cell_mean_area, cell_mean_intensity, data = cell_property(img, res)
-    print(cell_num, cell_mean_area, cell_mean_intensity)
+    cell_num, nuclear_mean_size, nuclear_mean_intensity, data = cell_property(img, res)
+    print(cell_num, nuclear_mean_size, nuclear_mean_intensity)
 
 
     """
     BORDER & SHAPE IRREGULARITY
     """
-    plot_df, mean_irregularity, std_irregularity = border_cell_from_ins_map(res)
-    print(mean_irregularity, std_irregularity)
+    plot_df, nuclear_shape_mean_irregularity, nuclear_shape_std_irregularity = border_cell_from_ins_map(res)
+    print(nuclear_shape_mean_irregularity, nuclear_shape_std_irregularity)
 
     # plot img with border
     img_with_border = img.copy()
