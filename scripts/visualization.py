@@ -16,7 +16,9 @@ layout = [
     [sg.Text('Input Image'), sg.FileBrowse(key='input_image')],
     [sg.Text('Output Image'), sg.FolderBrowse(key='output_path')],
 
-    [sg.Text('Guassian Sigma'), sg.InputText('7', enable_events=True, use_readonly_for_disable = False, key='sigma')],
+    ####### Further Modify 
+    [sg.Text('Guassian Sigma')], 
+    [sg.Input(key='sigma')],
 
     # [sg.Text('ColorMap'), 
     #  sg.Combo(values=['RGB', 'gray', 'viridis', 'Greens', 'Blues', 'Reds'], key='cmap', default_value='RGB', readonly=True)], 
