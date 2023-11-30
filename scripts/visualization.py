@@ -5,10 +5,11 @@ import PySimpleGUI as sg
 
 from utils import *
 
-
 """
 DEFINE GUI
 """
+
+img = sg.Image(key='image', expand_x=True, expand_y=True)
 
 layout = [
     [sg.Titlebar('Breast Cancer Histopathological Image Classification and Cell Property Measurement')],
@@ -26,25 +27,20 @@ layout = [
     [sg.Button('Classify'), sg.Button('Exit')],
 
     [sg.Text("", font=50, key='below')],
-]
 
-img = sg.Image(key='image', expand_x=True, expand_y=True)
-
-new_layout  =  [
-
-    [sg.Text('Results Loading... ', font=30, key='results')], 
+    [sg.Text('', font=30, key='results')],
     [sg.Text('Cell Number: ', key='cell_num')],
 
-    [sg.Text('Cell Population Density: ', key='cell_population_density')], 
+    [sg.Text('Cell Population Density: ', key='cell_population_density')],
     [sg.Text('Nuclear Proportion: ', key='nuclear_cytoplasmic_ratio')],
-    
+
     [sg.Text('Nuclear Mean Area: ', key='nuclear_mean_size')],
     [sg.Text('Nuclear Mean Intensity: ', key='nuclear_mean_intensity')],
 
-    [sg.Text('Nuclear Shape Mean Irregularity: ', key='nuclear_shape_mean_irregularity')], 
+    [sg.Text('Nuclear Shape Mean Irregularity: ', key='nuclear_shape_mean_irregularity')],
     [sg.Text('Nuclear Shape Std Irregularity: ', key='nuclear_shape_std_irregularity')],
 
-    [sg.Text('Tumor Type Classification: ', key='class')], 
+    [sg.Text('Tumor Type Classification: ', key='class')],
 
     [sg.Text("", font=30)],
 
@@ -52,12 +48,23 @@ new_layout  =  [
     [sg.Column([[img]], justification='center')]
 ]
 
-window = sg.Window('Classfier', layout=layout, size=(1000, 800))
+
+
+new_layout  =  [
+
+
+]
+
+window = sg.Window('Classfier', layout=layout,
+                   size=(800, 1000))
 
 from multiprocessing.spawn import freeze_support
 
 if __name__ == "__main__":
     freeze_support()
+
+    # window.extend_layout(window['below'], new_layout)
+    # window.refresh()
 
     while(True):
         event, values = window.read()
@@ -73,13 +80,13 @@ if __name__ == "__main__":
                 sg.popup('Please specify a name for the output image first!')
                 
             else:
+                window['results'].update("Results Loading...")
                 # Diaplay cell properties 
                 properties, img_with_border = main_func(img_path = values['input_image'], sigma=int(values['sigma']))
 
-                window.extend_layout(window['below'], new_layout)
-                window.refresh()
 
-                window['results'].update("Results Loading...Analysis Finished: ")
+
+                window['results'].update("Analysis Finished: ")
                 for property in properties.keys():
                     value = properties[property]
                     window[property].update(" ".join([i.capitalize() for i in property.split("_")]) + ": " + str(value))
