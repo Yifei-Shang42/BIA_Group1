@@ -62,16 +62,7 @@ test_ds, test_loader = construct_datasets(images=test_img,
 """
 MODEL & LOSS & OPTIMIZER
 """
-# Create DenseNet121, CrossEntropyLoss and Adam optimizer
-# model = monai.networks.nets.SEResNet101(spatial_dims=2, in_channels=3, num_classes=2).to(device)
-# model = monai.networks.nets.SEResNet152(spatial_dims=2, in_channels=3, num_classes=2).to(device)
 model = monai.networks.nets.DenseNet121(spatial_dims=2, in_channels=4, out_channels=2).to(device)
-# model = monai.networks.nets.ViT(in_channels=3,
-#                                 img_size=(700, 460),
-#                                 patch_size=(16, 16),
-#                                 classification=True,
-#                                 num_classes=2,
-#                                 spatial_dims=2).to(device)
 loss_function = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), 1e-5)
 
@@ -173,20 +164,6 @@ for epoch in range(max_epochs):
         writer.add_scalar("val_accuracy", metric, epoch + 1)
 print(f"Training completed, best_metric: {best_metric:.4f} at epoch: {best_metric_epoch}")
 writer.close()
-
-
-"""
-CAM
-"""
-# Load trained model
-model = load_trained_model(model_pth="./models/best_metric_model_classification_Dense121_9578.pth",
-                           model_class=monai.networks.nets.DenseNet121,
-                           device=device)
-
-# Visualize
-show_cam_of_img(model,
-                img_pth=train_img[22],
-                device=device)
 
 
 """

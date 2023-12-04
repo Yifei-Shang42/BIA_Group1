@@ -3,38 +3,28 @@ Function Storage
 """
 
 ### Import
-import logging
 import datetime
-import time
-import random
-import sys
-import shutil
 import os
+import time
 import scipy.spatial
 import scipy.signal
 import torch
 import monai
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import skimage.io as im
-from torch.utils.tensorboard import SummaryWriter
 from scipy import ndimage as ndi
 import sklearn.cluster
-import cv2
 from skimage.measure import regionprops, regionprops_table
 from skimage.morphology import remove_small_objects
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
 from skimage.filters import gaussian
-from monai.config import print_config
-from monai.visualize import CAM
 from monai.data import DataLoader, ImageDataset
 from monai.transforms import (
     EnsureChannelFirst,
     Compose,
     ScaleIntensity,
-    RandFlip,
     ResizeWithPadOrCrop
 )
 
@@ -54,13 +44,13 @@ def load_data_labels(root_path="./data/train"):
         labels += [0 if type == "benign" else 1 for _ in range(len(curr_data))]
     return images, labels
 
+
 ### Construct Datasets
 ### We use monai (based on PyTorch) to load datasets
 def construct_datasets(images,
                        labels,
                        pinmemory,
-                       batch_size=4,
-                       use_kmeans=False):
+                       batch_size=4):
     """
     :param images: list of image file names
     :param labels: list of labels (0: benign, 1: malignant)
@@ -70,16 +60,9 @@ def construct_datasets(images,
     :return: datasets
     """
     # Define transforms
-    if use_kmeans:
-        transforms = Compose([ScaleIntensity(),
-                              EnsureChannelFirst(),
-                              ResizeWithPadOrCrop((700, 460),
-                                                  use_kmean=use_kmeans),
-                              ])
-    else:
-        transforms = Compose([ScaleIntensity(),
-                              EnsureChannelFirst(),
-                              ResizeWithPadOrCrop((700, 460))])
+    transforms = Compose([ScaleIntensity(),
+                          EnsureChannelFirst(),
+                          ResizeWithPadOrCrop((700, 460))])
 
     # create a data loader
     ds = ImageDataset(image_files=images, labels=labels, transform=transforms)
@@ -102,36 +85,111 @@ def load_trained_model(model_pth,
     model.load_state_dict(state_dict)
     return model
 
-### Show CAM with img
-def show_cam_of_img(model,
-                    img_pth,
-                    device):
+
+### Model Training
+def model_train(max_epochs,
+                model,
+                optimizer,
+                train_loader,
+                train_ds,
+                writer,
+                device,
+                loss_function,
+                val_interval,
+                save_name,
+                test_loader):
     """
-    :param model: loaded model
-    :param img_pth: str, image path
-    :param device: str, "cpu" / "cuda"
-    :return: visualizes cam with img
+    :param max_epochs: int, maximum epochs
+    :param model: initialized model used for training
+    :param optimizer: initialized optimizer used for training
+    :param train_loader: constructed train data loader
+    :param train_ds: constructed train dataset
+    :param writer: summary history writer
+    :param device: GPU/CPU
+    :param loss_function: initialized loss function for training
+    :param val_interval: int, validation frequency
+    :param save_name: str, model save name
+    :param test_loader: constructed test data loader
+    :return: None
     """
-    # get cam of model
-    cam = CAM(nn_module=model,
-              target_layers="class_layers.relu",
-              fc_layers="class_layers.out")
+    # set up
+    best_metric = -1
+    best_metric_epoch = -1
+    initial_start_time = time.time()
+    start_time = initial_start_time
+    epoch_loss_values = []
+    metric_values = []
 
-    # load img & preprocess
-    img = im.imread(img_pth)
-    img_cf = torch.unsqueeze(torch.reshape(torch.tensor(img).to(torch.float32),
-                                           (3, 460, 700)), 0).to("cuda")
+    for epoch in range(max_epochs):
+        print("-" * 10)
+        print(f"epoch {epoch + 1}/{max_epochs}")
+        model.train()
+        epoch_loss = 0
+        step = 0
 
-    # gen acti map
-    result = cam(x=img_cf)
-    curr_acti = np.array(result[0, 0, :, :].cpu())
+        ## Training step
+        for batch_data in train_loader:
+            step += 1
+            inputs, train_labels = batch_data[0].to(device), batch_data[1].to(device)
+            optimizer.zero_grad()
 
-    # visualization
-    fig, ax = plt.subplots(1, 2)
-    ax[0].imshow(img)
-    ax[1].imshow(curr_acti, cmap="gray")
-    plt.show()
-    return
+            outputs = model(inputs)
+
+            loss = loss_function(outputs, train_labels)
+            loss.backward()
+            optimizer.step()
+            epoch_loss += loss.item()
+            epoch_len = len(train_ds) // train_loader.batch_size
+            if step % 50 == 0:
+                ## TIMER MODULE
+                finish_time = time.time()
+                time_diff = finish_time - start_time
+                est_total_time_per_epoch = (len(train_loader) / 50) * time_diff
+                current_finish_ratio = (epoch * len(train_loader) + step) / (max_epochs * len(train_loader))
+                seconds_to_finish = max_epochs * est_total_time_per_epoch * (1 - current_finish_ratio)
+                start_time = finish_time
+
+                print(f"{step}/{epoch_len}, train_loss: {loss.item():.4f}")
+                print(f"Estimated Time Left: {str(datetime.timedelta(seconds=seconds_to_finish))}")
+
+            writer.add_scalar("train_loss", loss.item(), epoch_len * epoch + step)
+
+        epoch_loss /= step
+        epoch_loss_values.append(epoch_loss)
+        print(f"epoch {epoch + 1} average loss: {epoch_loss:.4f}")
+
+        ## TIMER MODULE
+        finish_time
+
+        ## Evaluation
+        if (epoch + 1) % val_interval == 0:
+            model.eval()
+            val_loss_sum = 0
+            num_correct = 0.0
+            metric_count = 0
+            for val_data in test_loader:
+                val_images, val_labels = val_data[0].to(device), val_data[1].to(device)
+                with torch.no_grad():
+                    val_outputs = model(val_images)
+                    val_loss = loss_function(val_outputs, val_labels)
+                    val_loss_sum += val_loss.item()
+
+                    value = torch.eq(val_outputs.argmax(dim=-1), val_labels)
+                    metric_count += len(value)
+                    num_correct += value.sum().item()
+            metric = num_correct / metric_count
+            metric_values.append(metric)
+
+            if metric > best_metric:
+                best_metric = metric
+                best_metric_epoch = epoch + 1
+                torch.save(model.state_dict(), save_name)
+                print("saved new best metric model")
+            print(f"Current epoch: {epoch + 1} current accuracy: {metric:.4f} ")
+            print(f"Best accuracy: {best_metric:.4f} at epoch {best_metric_epoch}")
+            writer.add_scalar("val_accuracy", metric, epoch + 1)
+    print(f"Training completed, best_metric: {best_metric:.4f} at epoch: {best_metric_epoch}")
+    writer.close()
 
 ### Model Inference
 def model_inference(img_pth,
@@ -155,8 +213,7 @@ def model_inference(img_pth,
     ds, loader = construct_datasets(images=[img_pth],
                                     labels=[-1],
                                     batch_size=1,
-                                    pinmemory=pinmemory,
-                                    use_kmeans=False)
+                                    pinmemory=pinmemory)
 
     # inference
     for data in loader:
@@ -165,8 +222,6 @@ def model_inference(img_pth,
             outputs = model(img)
             value = outputs.argmax(dim=-1)
     return value
-
-
 
 
 ### KMeans & Watershed
