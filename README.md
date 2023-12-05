@@ -1,7 +1,13 @@
 # BIA4 Group 1: Breast Cancer
  
 ## Introduction 
-This software can do `breast cancer cell segmentation` and `tumor type classification`. Based on the segmentation results, cell properties such as `cell population density`, `nuclear-cytoplasmic ratio`, `nuclear size` and `nuclear shape irregularity` were measured, providing more information to clinical experts to aid with microscopic biopsy diagnosis. 
+This software can do **breast cancer cell segmentation** and **tumor type classification**. 
+
+Based on the segmentation results, cell properties such as `cell population density`, `nuclear-cytoplasmic ratio`, `nuclear size` and `nuclear shape irregularity` were measured, providing more information to clinical experts to aid with microscopic biopsy diagnosis. 
+
+## Documentation 
+
+See `./scripts/documentation.ipynb` for more information. 
 
 ## Install
 Download the package from this GitHub repository. The data used to build this classifier are included in the `data` directory. 
@@ -10,8 +16,8 @@ Download the package from this GitHub repository. The data used to build this cl
 Note that we use Python 3.10 for software development. The majority of package versions are the latest. However, if you are using older versions, it might also work. 
 
 | Package  | Package | Package |
-|----------|---------|---------|
-|matplotlib|monai|numpy|
+|:--------:|:-------:|:-------:|
+|matplotlib|  monai  |numpy|
 |pandas|PySimpleGUI|scipy|
 |skimage|sklearn|torch|
 
