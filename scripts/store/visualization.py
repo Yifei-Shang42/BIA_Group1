@@ -17,12 +17,9 @@ layout = [
     [sg.Text('Input Image'), sg.FileBrowse(key='input_image')],
     [sg.Text('Output Image'), sg.FolderBrowse(key='output_path')],
 
-    ####### Further Modify 
+    ####### Need Further Modify 
     [sg.Text('Guassian Sigma')], 
     [sg.Input(key='sigma')],
-
-    # [sg.Text('ColorMap'), 
-    #  sg.Combo(values=['RGB', 'gray', 'viridis', 'Greens', 'Blues', 'Reds'], key='cmap', default_value='RGB', readonly=True)], 
 
     [sg.Button('Classify'), sg.Button('Exit')],
 
@@ -48,12 +45,7 @@ layout = [
     [sg.Column([[img]], justification='center')]
 ]
 
-
-
-new_layout  =  [
-
-
-]
+new_layout  =  []
 
 window = sg.Window('Classfier', layout=layout,
                    size=(800, 1000))
@@ -83,8 +75,6 @@ if __name__ == "__main__":
                 window['results'].update("Results Loading...")
                 # Diaplay cell properties 
                 properties, img_with_border = main_func(img_path = values['input_image'], sigma=int(values['sigma']))
-
-
 
                 window['results'].update("Analysis Finished: ")
                 for property in properties.keys():

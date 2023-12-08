@@ -32,6 +32,8 @@ from monai.transforms import (
 ### Load Data
 def load_data_labels(root_path="./data/train"):
     """
+    Load Data Path and Labels 
+
     :param root_path: str, root of images (train / test)
     :return: lists of image file names and labels (0: benign, 1: malignant)
     """
@@ -52,6 +54,8 @@ def construct_datasets(images,
                        pinmemory,
                        batch_size=4):
     """
+    Construct Datasets and Prepare for Training 
+
     :param images: list of image file names
     :param labels: list of labels (0: benign, 1: malignant)
     :param pinmemory: bool, torch.cuda.is_available()
@@ -75,6 +79,8 @@ def load_trained_model(model_pth,
                        model_class,
                        device):
     """
+    Load the Model from Defined Path 
+
     :param model_pth: str, path of stored model state dict
     :param model_class: a model Class, compatible with state dict
     :param device: str, "cpu" / "cuda"
@@ -99,6 +105,8 @@ def model_train(max_epochs,
                 save_name,
                 test_loader):
     """
+    Train the Model 
+
     :param max_epochs: int, maximum epochs
     :param model: initialized model used for training
     :param optimizer: initialized optimizer used for training
@@ -195,6 +203,8 @@ def model_train(max_epochs,
 def model_inference(img_pth,
                     model_pth):
     """
+    Predict with Trained Model 
+
     :param img_pth: image path to be classified
     :param model_pth: pretrained model path
     :return: model prediction of the image class
@@ -230,6 +240,9 @@ def kmeans_watershed_nuclei_seg(img, sigma: int = 7,
                                 min_distance: int=10, 
                                 min_size: int=300):
     """
+    Do KMeans and Watershed Segmentation
+    Calculate Cell Population and Nuclea-Cytoplasmic Ratio 
+
     :param img: numpy array, image to be segmented
     :param sigma: int, sigma of Guassian Filter, default value is 7
     :param footprint: numpy array, the footprint in peak_local_max calculation 
@@ -279,6 +292,8 @@ def kmeans_watershed_nuclei_seg(img, sigma: int = 7,
 ### Cell Property Measurement 
 def cell_property(img, seg):
     """
+    Calculate Cell Number and Nuclear Size 
+
     :param img: numpy array, orignal image 
     :param seg: numpy array, segmented img 
     :return: properties of single cell region 
@@ -309,6 +324,8 @@ def cell_property(img, seg):
 ### Get Border from Instance Segmentation
 def border_cell_from_ins_map(ins_map):
     """
+    Calculated Nuclear Shape Irregularity 
+
     :param ins_map: water shed segmentation res
     :return: cell borders for plot, mean & std of cell shape irregularity
     """
@@ -356,6 +373,8 @@ def border_cell_from_ins_map(ins_map):
 ### Main Function
 def main_func(img_path, sigma: int = 5):
     """
+    Main Function to Be Called for Analysis 
+
     :param img_path: input image path
     :return: dictionary of cell properties, img with border marked
     """
@@ -384,3 +403,4 @@ def main_func(img_path, sigma: int = 5):
     properties["nuclear_shape_std_irregularity"] = nuclear_shape_std_irregularity
 
     return properties, img_with_border
+

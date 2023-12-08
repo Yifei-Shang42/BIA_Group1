@@ -11,6 +11,12 @@ DEFINE GUI
 """
 
 def make_win1():
+    """
+    Define Initial GUI Window 
+
+    :return: a window 
+    """
+    # define the window layout 
     layout = [
         [sg.Titlebar('Breast Cancer Histopathological Image Classification and Cell Property Measurement')],
 
@@ -25,12 +31,17 @@ def make_win1():
 
         [sg.Text("", font=50, key='below')],
 ]
-    return sg.Window('Classify', layout, location=(800,600), finalize=True)
+    return sg.Window('Classify', layout, location=(800,600), finalize=True)  # create the window 
 
 
 def make_win2():
-    img = sg.Image(key='image', expand_x=True, expand_y=True)
+    """
+    Define Results Displaying Window
 
+    :return: a window 
+    """
+    # define the window layout 
+    img = sg.Image(key='image', expand_x=True, expand_y=True)
     layout  =  [
 
         [sg.Text('Results Loading...It may take a minute', font=30, key='results')], 
@@ -53,52 +64,59 @@ def make_win2():
 
         [sg.Button('Exit')]
     ]
-    return sg.Window('Results', layout, finalize=True)
-
+    return sg.Window('Results', layout, finalize=True)  # create the window 
 
 
 def main():
-    window1, window2 = make_win1(), None        # start off with 1 window open
+    """
+    The Main Function to Be Called to Initialize GUI 
 
-    while True:             # Event Loop
+    :return: a series of window events 
+    """
+    window1, window2 = make_win1(), None  # start with window1 created 
+
+    while True:  # create with event loop 
         window, event, values = sg.read_all_windows()
         if event == sg.WIN_CLOSED or event == 'Exit':
             window.close()
 
-            if window == window2:       # if closing win 2, mark as closed
+            if window == window2:  # if window2 closed, still keep window1 
                 window2 = None
-            elif window == window1:     # if closing win 1, exit program
+            elif window == window1:  # if window2 closed, program finishes 
                 break
 
-        elif event == 'Classify' and not window2:
+        elif event == 'Classify' and not window2:  # define the most important event 
             
-            if values['input_image'] == '':
+            if values['input_image'] == '':  # check with input path 
                 sg.popup('Please choose an image first!')
-            elif values['output_path'] == '':
+            elif values['output_path'] == '':  # check with output path 
                 sg.popup('Please specify a name for the output image first!')
                 
             else:
-                window2 = make_win2()
+                window2 = make_win2()  # pop out result analyzing window 
                 window2.refresh()
                 
-                # Diaplay cell properties 
+                # obtain and display cell properties 
                 properties, img_with_border = main_func(img_path = values['input_image'], sigma=int(values['sigma']))
 
                 window2['results'].update("Results Loading...Analysis Finished: ")
                 for property in properties.keys():
                     value = properties[property]
                     window2[property].update(" ".join([i.capitalize() for i in property.split("_")]) + ": " + str(value))
-            
+
+                # obtain and display tumor type 
                 label = model_inference(img_pth=values['input_image'],
                         model_pth="./models/best_metric_model_classification_Dense121_9560.pth").cpu()
                 label = np.array(label)[0]
 
                 window2['class'].update('Tumor Type Classification: ' + ("malignant" if label else "benign"))
-           
+
+                # display the image with nuclei edge detected 
                 io.imsave(values['output_path']+'/output.png', img_with_border)
                 window2['image'].update(values['output_path']+'/output.png')
                 
     window.close()
 
+# to avoid errors raised from multi-threading
 if __name__ == '__main__':
     main()
