@@ -32,6 +32,13 @@ You can run the following code to initialize the GUI of our software.
 python3 ./scripts/main.py
 ```
 
+## History Visualization
+
+You can visualize the training history of our pretrained model using Tensorboard by running the following script
+``` bash
+tensorboard --logdir .\runs\DenseNet121_history
+```
+
 ## References 
 Spanhol, F. A., Oliveira, L. S., Petitjean, C., & Heutte, L. (2016). A Dataset for Breast Cancer Histopathological Image Classification. IEEE transactions on bio-medical engineering, 63(7), 1455–1462. https://doi.org/10.1109/TBME.2015.2496264
 
