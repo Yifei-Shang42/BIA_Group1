@@ -256,7 +256,7 @@ def kmeans_watershed_nuclei_seg(img, sigma: int = 7,
     # KMeans
     img_flat = img.transpose(2, 0, 1).reshape(3, -1).T
     model = sklearn.cluster.KMeans(n_clusters=3).fit(img_flat)
-    labels = model.labels_.reshape(460, 700)
+    labels = model.labels_.reshape(img.shape[0], img.shape[1])
 
     # determine nuclei and cytoplasm 
     mean1 = np.mean(img[labels == 0])
